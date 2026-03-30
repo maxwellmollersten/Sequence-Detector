@@ -238,6 +238,23 @@
       border-radius: 8px;
       color: rgba(234,240,255,.92);
     }
+
+    pre{
+      margin:16px 0 0;
+      padding:20px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.35);
+      overflow-x:auto;
+      line-height:1.6;
+    }
+    pre code{
+      background:none;
+      border:none;
+      padding:0;
+      font-size:13px;
+      color: rgba(234,240,255,.88);
+    }
   </style>
 </head>
 
@@ -254,6 +271,7 @@
       <a class="pill" href="#how">How it works</a>
       <a class="pill" href="#video">Video</a>
       <a class="pill" href="#hardware">Hardware</a>
+      <a class="pill" href="#code">Code</a>
     </nav>
   </div>
 </header>
@@ -357,6 +375,73 @@
         <p>The FSM is implemented as a Moore machine, where the output depends only on the current state.</p>
       </div>
     </div>
+  </section>
+
+  <!-- CODE -->
+  <section class="card pad" id="code" style="margin-top:16px">
+    <h2>Code</h2>
+    <p>
+      The design uses three flip-flops (<code>q0</code>, <code>q1</code>, <code>q2</code>) to encode the FSM states.
+      Next-state logic is implemented as minimized Boolean expressions computed combinatorially,
+      and latched into the flip-flops on the rising edge of the clock (<code>y</code>).
+      The enable input (<code>en</code>) acts as the data switch — only a rising edge on <code>en</code> advances the state.
+      The output <code>u</code> (LED) is high when the state encoding matches the detected state for <code>10110</code>.
+    </p>
+
+    <pre><code>library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity grind1 is
+    Port (
+        x  : in  STD_LOGIC;  -- Input bit
+        y  : in  STD_LOGIC;  -- Clock
+        en : in  STD_LOGIC;  -- Enable (data switch)
+        u  : out STD_LOGIC   -- Output LED
+    );
+end grind1;
+
+architecture Behavioral of grind1 is
+    signal q0   : STD_LOGIC := '0';
+    signal q1   : STD_LOGIC := '0';
+    signal q2   : STD_LOGIC := '0';
+
+    signal en_d : STD_LOGIC := '0';
+
+    signal q0_p : STD_LOGIC;
+    signal q1_p : STD_LOGIC;
+    signal q2_p : STD_LOGIC;
+begin
+    -- Next-state logic (minimized Boolean expressions)
+    q0_p &lt;= (x and (not q1)) or
+            (q2 and (not q0) and (not q1)) or
+            (x and (not q0) and (not q2));
+
+    q1_p &lt;= (q0 and (not q2) and (not x)) or
+            (q1 and x and (not q0) and (not q2));
+
+    q2_p &lt;= (q0 and q1 and x and (not q2)) or
+            (q2 and (not q0) and (not q1) and (not x));
+
+    -- Output: high when sequence 10110 is detected
+    u &lt;= q2 and (not q1) and q0;
+
+    -- Flip-flops: latch next state on rising edge of clock
+    process(y)
+        variable en_rise : STD_LOGIC;
+    begin
+        if rising_edge(y) then
+            en_rise := en and (not en_d);
+            en_d &lt;= en;
+
+            if en_rise = '1' then
+                q0 &lt;= q0_p;
+                q1 &lt;= q1_p;
+                q2 &lt;= q2_p;
+            end if;
+        end if;
+    end process;
+
+end Behavioral;</code></pre>
   </section>
 
   <footer>
