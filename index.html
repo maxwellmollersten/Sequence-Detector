@@ -1,1 +1,386 @@
-<!-- put code here, follow same layout as other repos. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sequence Detector · VHDL</title>
+  <meta name="description" content="VHDL sequence detector for the sequence 10110, implemented on a Basys 3 FPGA." />
+
+  <style>
+    :root{
+      --bg:#070a12;
+      --panel:#0c1222;
+      --text:#eaf0ff;
+      --muted:#b7c1df;
+      --line:rgba(255,255,255,.12);
+      --shadow: 0 14px 40px rgba(0,0,0,.45);
+      --radius:18px;
+      --max: 980px;
+      --a:#7aa2ff;
+      --b:#6ef3c5;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(122,162,255,.20), transparent 60%),
+        radial-gradient(900px 600px at 90% 5%, rgba(110,243,197,.16), transparent 60%),
+        linear-gradient(180deg, #050714 0%, var(--bg) 55%, #05060d 100%);
+    }
+
+    a{color:inherit}
+    .wrap{max-width:var(--max); margin:0 auto; padding:26px 18px 60px}
+
+    header{
+      position:sticky; top:0; z-index:20;
+      backdrop-filter: blur(12px);
+      background: rgba(5,7,20,.55);
+      border-bottom:1px solid var(--line);
+    }
+
+    .topbar{
+      max-width:var(--max);
+      margin:0 auto;
+      padding:12px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      text-decoration:none;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .logo{
+      width:14px; height:14px; border-radius:50%;
+      background: linear-gradient(135deg, var(--a), var(--b));
+      box-shadow: 0 0 0 6px rgba(122,162,255,.10);
+    }
+
+    nav{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+    .pill{
+      padding:8px 10px;
+      border-radius:999px;
+      color:var(--muted);
+      text-decoration:none;
+      border:1px solid transparent;
+      transition: color .15s, border-color .15s, background .15s;
+    }
+    .pill:hover{
+      color:var(--text);
+      border-color:var(--line);
+      background:rgba(255,255,255,.04);
+    }
+    .pill.active{
+      color:var(--a);
+      border-color:rgba(122,162,255,.30);
+      background:rgba(122,162,255,.08);
+    }
+
+    .pill.back{
+      padding:10px 16px;
+      color: rgba(234,240,255,.95);
+      border: 1px solid rgba(122,162,255,.35);
+      background: linear-gradient(135deg, rgba(122,162,255,.14), rgba(110,243,197,.08));
+    }
+    .pill.back:hover{
+      border-color: rgba(122,162,255,.55);
+      background: linear-gradient(135deg, rgba(122,162,255,.20), rgba(110,243,197,.12));
+    }
+
+    .card{
+      border-radius:var(--radius);
+      border:1px solid var(--line);
+      background: rgba(12,18,34,.72);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .pad{padding:28px}
+
+    h1{
+      margin:0 0 12px;
+      font-size: clamp(28px, 3.8vw, 44px);
+      line-height:1.12;
+      background: linear-gradient(135deg, var(--text) 40%, var(--a));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+    h2{margin:0 0 12px; font-size:22px; color:var(--a)}
+    h3{margin:0 0 8px; font-size:15px; color: rgba(234,240,255,.92)}
+    p{margin:0 0 12px; color:var(--muted); line-height:1.65}
+    p:last-child{margin:0}
+    ul{margin:0; padding-left:18px; color:var(--muted); line-height:1.7}
+
+    .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px}
+    .chip{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(122,162,255,.25);
+      background: rgba(122,162,255,.07);
+      color:var(--a);
+    }
+
+    .cta{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      text-decoration:none;
+      font-weight:800;
+    }
+    .btn.primary{
+      border-color: rgba(122,162,255,.35);
+      background: linear-gradient(135deg, rgba(122,162,255,.20), rgba(110,243,197,.12));
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:16px;
+    }
+    @media (max-width:860px){.grid{grid-template-columns:1fr}}
+
+    .subcard{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 10px 24px rgba(0,0,0,.28);
+      padding:16px;
+    }
+
+    /* Sequence display */
+    .seq{
+      display:flex;
+      gap:8px;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
+    .bit{
+      width:48px; height:48px;
+      border-radius:12px;
+      border:1px solid rgba(122,162,255,.30);
+      background: rgba(122,162,255,.10);
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px;
+      font-weight:800;
+      color:var(--a);
+      font-family: ui-monospace, monospace;
+    }
+
+    /* Video (Shorts) */
+    .videoWrap{
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      background: rgba(0,0,0,.25);
+      border-radius:14px;
+    }
+    .videoWrap iframe{
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 133.333%;
+      border: 0;
+      display: block;
+      transform: translateY(-12.5%);
+    }
+    .videoMeta{
+      padding:12px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+    .videoMeta b{
+      display:block;
+      color:var(--text);
+      margin-bottom:4px;
+      font-size:14px;
+    }
+
+    /* Constrain Short to a reasonable width */
+    .shortWrap{
+      max-width:340px;
+    }
+
+    footer{
+      margin-top:20px;
+      padding-top:18px;
+      border-top:1px solid var(--line);
+      font-size:13px;
+      color:var(--muted);
+      display:flex; justify-content:space-between;
+      gap:10px; flex-wrap:wrap;
+    }
+
+    code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.95em;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      padding: 2px 6px;
+      border-radius: 8px;
+      color: rgba(234,240,255,.92);
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <a class="brand" href="#top">
+      <span class="logo" aria-hidden="true"></span>
+      <span>Sequence Detector · VHDL</span>
+    </a>
+    <nav aria-label="Navigation">
+      <a class="pill back" href="https://maxwellmollersten.github.io/projects/">← All projects</a>
+      <a class="pill" href="#overview">Overview</a>
+      <a class="pill" href="#how">How it works</a>
+      <a class="pill" href="#video">Video</a>
+      <a class="pill" href="#hardware">Hardware</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top" class="wrap">
+
+  <!-- OVERVIEW -->
+  <section class="card pad" id="overview">
+    <h1>Sequence Detector</h1>
+    <p>
+      A hardware sequence detector implemented in VHDL on a Basys 3 FPGA, built as a project in the
+      course Digital Electronics (1TE771, HT2025). The detector identifies the binary sequence
+      <b>10110</b> from a stream of input bits driven by physical switches on the board.
+      A LED lights up when the sequence is detected.
+    </p>
+    <p>
+      The design uses a finite state machine (FSM) with at least three flip-flops,
+      fulfilling the course requirement of a minimum 5-bit sequence.
+    </p>
+
+    <div class="chips">
+      <span class="chip">VHDL</span>
+      <span class="chip">FPGA</span>
+      <span class="chip">Basys 3</span>
+      <span class="chip">State Machine</span>
+      <span class="chip">Digital Electronics</span>
+    </div>
+
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/maxwellmollersten/Sequence-Detector" target="_blank" rel="noreferrer">Repository</a>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="card pad" id="how" style="margin-top:16px">
+    <h2>How it works</h2>
+    <div class="grid">
+      <div class="subcard">
+        <h3>The target sequence</h3>
+        <p>The FSM tracks progress toward detecting <code>10110</code> bit by bit.
+        When the full sequence has been received in order, the output LED is asserted.</p>
+        <div class="seq">
+          <div class="bit">1</div>
+          <div class="bit">0</div>
+          <div class="bit">1</div>
+          <div class="bit">1</div>
+          <div class="bit">0</div>
+        </div>
+      </div>
+
+      <div class="subcard">
+        <h3>State machine</h3>
+        <ul>
+          <li><b>S0</b> — Idle, no bits matched</li>
+          <li><b>S1</b> — Matched <code>1</code></li>
+          <li><b>S2</b> — Matched <code>10</code></li>
+          <li><b>S3</b> — Matched <code>101</code></li>
+          <li><b>S4</b> — Matched <code>1011</code></li>
+          <li><b>S5</b> — Matched <code>10110</code> → LED on</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIDEO -->
+  <section class="card pad" id="video" style="margin-top:16px">
+    <h2>Video</h2>
+    <p>Demo of the sequence detector running on the Basys 3 board.</p>
+    <div class="shortWrap">
+      <div class="videoWrap">
+        <iframe
+          src="https://www.youtube.com/embed/bzCY74F50cI"
+          title="Sequence Detector demo"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      </div>
+      <div class="videoMeta">
+        <b>Sequence Detector — Demo</b>
+        The detector identifying the sequence 10110 on hardware.
+      </div>
+    </div>
+  </section>
+
+  <!-- HARDWARE -->
+  <section class="card pad" id="hardware" style="margin-top:16px">
+    <h2>Hardware</h2>
+    <div class="grid">
+      <div class="subcard">
+        <h3>Components</h3>
+        <ul>
+          <li>Basys 3 FPGA board (<code>xc7a35tcpg236-1</code>)</li>
+          <li>Onboard switches — input bits and manual clock</li>
+          <li>Onboard LED — sequence detected indicator</li>
+        </ul>
+      </div>
+
+      <div class="subcard">
+        <h3>Implementation</h3>
+        <p>Written in VHDL and synthesized with Xilinx Vivado. Ports are mapped to physical pins using the Basys 3 constraint file.</p>
+        <p>The FSM is implemented as a Moore machine, where the output depends only on the current state.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>© <span id="year"></span> Sequence Detector</div>
+    <div>GitHub Pages</div>
+  </footer>
+</main>
+
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  // Active nav highlight via IntersectionObserver
+  const navLinks = document.querySelectorAll('nav .pill:not(.back)');
+  const sections = document.querySelectorAll('section[id]');
+  const navObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        navLinks.forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if(link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -60% 0px' });
+  sections.forEach(s => navObserver.observe(s));
+</script>
+</body>
+</html>
